@@ -1,16 +1,12 @@
-# KD2126 Kidsbits I2S Audio Power Amplifier Module
-
-[TOC]
-
-## Physical Picture
+# KD2126 KD3027 KD3028 Kidsbits I2S Audio Power Amplifier Module
 
 ![0](./media/0.png)
 
-## Description
+## 1.Description
 
 This module is equipped with the MAX98375 as the main control chip. It is a highly efficient, low-noise and highly integrated D-class audio power amplifier, which is particularly suitable for portable audio devices with high requirements for power consumption and anti-interference. Its I2S digital input, anti-distortion function and rich protection mechanisms make it have broad applications in consumer electronic products.
 
-## Parameters
+## 2.Parameters
 
 - I2S serial digital audio input interface
 - Supports wide-range sampling rates: 8kHz to 96kHz
@@ -29,7 +25,7 @@ This module is equipped with the MAX98375 as the main control chip. It is a high
 - Dimensions: 48 *24mm
 - Weight: 8.09g
 
-## Schematic Diagram
+## 3.Schematic Diagram
 
 ![1](./media/1.png)
 
@@ -45,7 +41,7 @@ This module is equipped with the MAX98375 as the main control chip. It is a high
 
 
 
-| Microphone module | ESP32 |
+| Amplifier module | ESP32 |
 | :---------------: | :---: |
 |        VCC        |  3V3  |
 |        GND        |   G   |
@@ -57,7 +53,7 @@ This module is equipped with the MAX98375 as the main control chip. It is a high
 
 Connect either of the two interfaces at the back of the module to a speaker. After burning the program, the experimental effect can be achieved.
 
-## Environment Configuration & Sample Code
+## 4.Environment Configuration & Sample Code
 
 **Arduino IDE (Windows)**
 
@@ -108,13 +104,13 @@ Then copy the following code to the editing box and upload it to the ESP32 board
 
 // Audio parameter configuration
 #define SAMPLE_RATE     44100    // Sampling rate (Hz)
-#define BITS_PER_SAMPLE 16       // Sampling bit number
+#define BITS_PER_SAMPLE 16       // Bits per sample
 #define BUFFER_SIZE     1024     // Buffer size
 
 // Ambulance siren parameters
 #define LOW_FREQ        500      // Low frequency (Hz)
 #define HIGH_FREQ       700      // High frequency (Hz)
-#define SWEEP_TIME      1000     // Frequency variation period (ms)
+#define SWEEP_TIME      1000     // Frequency change period (ms)
 
 // Audio buffer
 int16_t audioBuffer[BUFFER_SIZE];
@@ -122,17 +118,17 @@ int bufferIndex = 0;
 bool isHighFreq = false;
 unsigned long lastSweepTime = 0;
 
-// I2S pin configuration (Modify according to actual connection)
-#define I2S_MCLK_PIN    I2S_PIN_NO_CHANGE  // There are no MCLK pins
+// I2S pin configuration (modify according to actual connections)
+#define I2S_MCLK_PIN    I2S_PIN_NO_CHANGE  // No MCLK pin
 #define I2S_BCLK_PIN    19
-#define I2S_LRCk_PIN     17
+#define I2S_LRCK_PIN     17
 #define I2S_DOUT_PIN    18
 #define I2S_DATA_IN_PIN I2S_PIN_NO_CHANGE
 
 void setup() {
   Serial.begin(115200);
   
-  // Configure the I2S parameters
+  // Configure I2S parameters
   i2s_config_t i2s_config = {
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
     .sample_rate = SAMPLE_RATE,
@@ -144,10 +140,10 @@ void setup() {
     .dma_buf_len = BUFFER_SIZE,
     .use_apll = false,
     .tx_desc_auto_clear = true,
-    .fixed_mclk = 0  // Disable the fixed MCLK
+    .fixed_mclk = 0  // Disable fixed MCLK
   };
   
-  // Configure the I2S pins
+  // Configure I2S pins
   i2s_pin_config_t pin_config = {
     .bck_io_num = I2S_BCLK_PIN,
     .ws_io_num = I2S_LRCK_PIN,
@@ -155,26 +151,26 @@ void setup() {
     .data_in_num = I2S_DATA_IN_PIN
   };
   
-  // Install and start the I2S driver
+  // Install and start I2S driver
   i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
   i2s_set_pin(I2S_PORT, &pin_config);
   i2s_start(I2S_PORT);
   
-  Serial.println("The ambulance siren simulator has been activated");
+  Serial.println("Ambulance siren simulator started");
 }
 
-// Generate the waveform of the ambulance siren
+// Generate ambulance siren waveform
 void generateSirenWaveform(int16_t* buffer, int size, float frequency) {
   float amplitude = 16000.0;  // Volume level (0-32767)
   float phase = 0.0;
   float phaseIncrement = 2.0 * PI * frequency / SAMPLE_RATE;
   
   for (int i = 0; i < size; i++) {
-    // Generate a sine wave
+    // Generate sine wave
     buffer[i] = (int16_t)(amplitude * sin(phase));
     phase += phaseIncrement;
     
-    // Deal with phase overflow
+    // Handle phase overflow
     if (phase > 2.0 * PI) {
       phase -= 2.0 * PI;
     }
@@ -182,28 +178,29 @@ void generateSirenWaveform(int16_t* buffer, int size, float frequency) {
 }
 
 void loop() {
-  // Check whether the frequency needs to be switched
+  // Check if frequency needs to be switched
   if (millis() - lastSweepTime > SWEEP_TIME) {
     isHighFreq = !isHighFreq;
     lastSweepTime = millis();
     Serial.print("Switching frequency: ");
-    Serial.println(isHighFreq ? "High frequency" : "Low frequency");
+    Serial.println(isHighFreq ? "high frequency" : "low frequency");
   }
   
-  // Generate the waveform of the current frequency
+  // Generate waveform for current frequency
   float currentFreq = isHighFreq ? HIGH_FREQ : LOW_FREQ;
   generateSirenWaveform(audioBuffer, BUFFER_SIZE, currentFreq);
   
-  // Send the waveform data to the I2S interface
+  // Send waveform data to I2S interface
   size_t bytesWritten = 0;
   i2s_write(I2S_PORT, audioBuffer, BUFFER_SIZE * sizeof(int16_t), &bytesWritten, portMAX_DELAY);
 }
+
 
 ```
 
 ![7](./media/7.png)
 
-## Test Result
+## 5.Test Result
 
 After the burning and uploading the code, the ambulance siren sound will be produced, alternating between two frequencies. It sounds like “woo ~ wah ~ woo ~ wah ~”. The serial monitor will print the following data, as shown below:
 
